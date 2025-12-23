@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图书馆管理系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-book"></i> 图书馆管理系统</h1>
+            <nav id="main-nav">
+                <button onclick="showSection('login')">管理员登录</button>
+                <button onclick="showSection('register')">读者注册</button>
+                <button onclick="showSection('add-book')">添加书籍</button>
+                <button onclick="showSection('search')">搜索书籍</button>
+                <button onclick="showSection('borrow')">借阅管理</button>
+                <button onclick="showSection('records')">借阅记录</button>
+                <button onclick="showSection('statistics')">统计信息</button>
+                <button onclick="showSection('recommend')">智能推荐</button>
+            </nav>
+        </header>
+
+        <main>
+            <!-- 登录区域 -->
+            <section id="login-section" class="section active">
+                <h2><i class="fas fa-sign-in-alt"></i> 管理员登录</h2>
+                <div class="form-group">
+                    <input type="text" id="username" placeholder="用户名">
+                    <input type="password" id="password" placeholder="密码">
+                    <button onclick="login()">登录</button>
+                </div>
+            </section>
+
+            <!-- 读者注册 -->
+            <section id="register-section" class="section">
+                <h2><i class="fas fa-user-plus"></i> 读者注册</h2>
+                <div class="form-group">
+                    <input type="text" id="reader-name" placeholder="读者姓名">
+                    <select id="reader-gender">
+                        <option value="">选择性别</option>
+                        <option value="男">男</option>
+                        <option value="女">女</option>
+                    </select>
+                    <input type="text" id="reader-phone" placeholder="联系电话">
+                    <button onclick="registerReader()">注册</button>
+                </div>
+                <div class="result" id="register-result"></div>
+            </section>
+
+            <!-- 添加书籍 -->
+            <section id="add-book-section" class="section">
+                <h2><i class="fas fa-book-medical"></i> 添加书籍</h2>
+                <div class="form-group">
+                    <input type="text" id="book-name" placeholder="书名">
+                    <input type="text" id="book-author" placeholder="作者">
+                    <input type="text" id="book-publisher" placeholder="出版社">
+                    <input type="text" id="book-category" placeholder="分类">
+                    <input type="number" id="book-count" placeholder="数量" value="1" min="1">
+                    <button onclick="addBook()">添加书籍</button>
+                </div>
+                <div class="result" id="add-book-result"></div>
+            </section>
+
+            <!-- 搜索书籍 -->
+            <section id="search-section" class="section">
+                <h2><i class="fas fa-search"></i> 搜索书籍</h2>
+                <div class="form-group">
+                    <input type="text" id="search-keyword" placeholder="输入书名、作者或出版社">
+                    <button onclick="searchBooks()">搜索</button>
+                    <button onclick="listAllBooks()">显示所有书籍</button>
+                </div>
+                
+                <div class="search-options">
+                    <h3>按作者搜索</h3>
+                    <div class="form-group">
+                        <input type="text" id="author-keyword" placeholder="输入作者姓名">
+                        <button onclick="searchByAuthor()">搜索</button>
+                    </div>
+                </div>
+
+                <div id="books-list">
+                    <!-- 书籍列表将在这里显示 -->
+                </div>
+            </section>
+
+            <!-- 借阅管理 -->
+            <section id="borrow-section" class="section">
+                <h2><i class="fas fa-exchange-alt"></i> 借阅管理</h2>
+                
+                <div class="borrow-actions">
+                    <div class="borrow-form">
+                        <h3>借书</h3>
+                        <div class="form-group">
+                            <input type="number" id="borrow-reader-id" placeholder="读者ID">
+                            <input type="number" id="borrow-book-id" placeholder="书籍ID">
+                            <button onclick="borrowBook()">借书</button>
+                        </div>
+                    </div>
+
+                    <div class="borrow-form">
+                        <h3>还书</h3>
+                        <div class="form-group">
+                            <input type="number" id="return-borrow-id" placeholder="借阅记录ID">
+                            <button onclick="returnBook()">还书</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lists-container">
+                    <div class="list-box">
+                        <h3><i class="fas fa-users"></i> 读者列表</h3>
+                        <div id="readers-list">
+                            <p>加载中...</p>
+                        </div>
+                    </div>
+
+                    <div class="list-box">
+                        <h3><i class="fas fa-book"></i> 书籍列表</h3>
+                        <div id="books-list-borrow">
+                            <p>加载中...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 借阅记录 -->
+            <section id="records-section" class="section">
+                <h2><i class="fas fa-history"></i> 借阅记录</h2>
+                <div class="form-group">
+                    <button onclick="loadBorrowRecords()">刷新记录</button>
+                    <button onclick="loadOverdueBooks()">查看逾期书籍</button>
+                </div>
+                <div id="borrow-records">
+                    <p>加载中...</p>
+                </div>
+            </section>
+
+            <!-- 统计信息 -->
+            <section id="statistics-section" class="section">
+                <h2><i class="fas fa-chart-bar"></i> 统计信息</h2>
+                
+                <div class="form-group">
+                    <button onclick="loadLibraryOverview()">刷新统计</button>
+                    <button onclick="loadBookPopularity()">热门书籍</button>
+                    <button onclick="loadCategoryDistribution()">分类统计</button>
+                    <button onclick="loadBorrowTrend()">借阅趋势</button>
+                </div>
+                
+                <div id="statistics-overview">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>加载统计数据...</p>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <h3><i class="fas fa-chart-line"></i> 借阅趋势图</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="borrowTrendChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="lists-container">
+                    <div class="list-box">
+                        <h3><i class="fas fa-fire"></i> 热门书籍排行榜</h3>
+                        <div id="book-popularity-list">
+                            <p>点击"热门书籍"按钮加载数据</p>
+                        </div>
+                    </div>
+                    
+                    <div class="list-box">
+                        <h3><i class="fas fa-chart-pie"></i> 分类分布</h3>
+                        <div id="category-distribution-list">
+                            <p>点击"分类统计"按钮加载数据</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="list-box">
+                    <h3><i class="fas fa-user-check"></i> 读者活跃度排名</h3>
+                    <div id="reader-activity-list">
+                        <p>点击"刷新统计"按钮加载数据</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 智能推荐 -->
+            <section id="recommend-section" class="section">
+                <h2><i class="fas fa-robot"></i> 智能推荐</h2>
+                
+                <div class="search-options">
+                    <h3><i class="fas fa-user-circle"></i> 个性化推荐</h3>
+                    <div class="form-group">
+                        <input type="number" id="recommend-reader-id" placeholder="输入读者ID">
+                        <button onclick="getPersonalizedRecommendations()">获取推荐</button>
+                    </div>
+                </div>
+                
+                <div class="search-options">
+                    <h3><i class="fas fa-book"></i> 相似书籍推荐</h3>
+                    <div class="form-group">
+                        <input type="number" id="recommend-book-id" placeholder="输入书籍ID">
+                        <button onclick="getSimilarBooks()">寻找相似书籍</button>
+                    </div>
+                </div>
+                
+                <div id="personalized-recommendations">
+                    <div class="loading">
+                        <i class="fas fa-book-reader"></i>
+                        <p>请输入读者ID获取个性化推荐</p>
+                    </div>
+                </div>
+                
+                <div id="similar-books-recommendations">
+                    <div class="loading">
+                        <i class="fas fa-book-open"></i>
+                        <p>请输入书籍ID寻找相似书籍</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        let currentSection = 'login';
+        let borrowTrendChart = null;
+        
+        // 显示指定区域
+        function showSection(sectionId) {
+            // 隐藏所有区域
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // 显示指定区域
+            document.getElementById(sectionId + '-section').classList.add('active');
+            currentSection = sectionId;
+            
+            // 加载相关数据
+            if (sectionId === 'search') {
+                listAllBooks();
+            } else if (sectionId === 'borrow') {
+                loadReaders();
+                loadBooksForBorrow();
+            } else if (sectionId === 'records') {
+                loadBorrowRecords();
+            } else if (sectionId === 'statistics') {
+                loadLibraryOverview();
+                loadReaderActivity();
+            } else if (sectionId === 'recommend') {
+                // 推荐页面不需要初始加载
+            }
+        }
+
+        // 显示结果消息
+        function showResult(elementId, message, isSuccess = true) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = 'result ' + (isSuccess ? 'success' : 'error');
+            element.style.display = 'block';
+            
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 3000);
+        }
+
+        // API调用函数
+        async function callAPI(endpoint, method = 'GET', data = null) {
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            };
+            
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+            
+            try {
+                const response = await fetch(endpoint, options);
+                return await response.json();
+            } catch (error) {
+                console.error('API调用错误:', error);
+                return { success: false, message: '网络错误' };
+            }
+        }
+
+        // 管理员登录
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            const result = await callAPI('/api/login', 'POST', { username, password });
+            alert(result.message);
+            
+            if (result.success) {
+                showSection('search');
+            }
+        }
+
+        // 注册读者
+        async function registerReader() {
+            const name = document.getElementById('reader-name').value;
+            const gender = document.getElementById('reader-gender').value;
+            const phone = document.getElementById('reader-phone').value;
+            
+            const result = await callAPI('/api/register_reader', 'POST', { 
+                name, gender, phone 
+            });
+            
+            showResult('register-result', result.message, result.success);
+            
+            if (result.success) {
+                document.getElementById('reader-name').value = '';
+                document.getElementById('reader-gender').value = '';
+                document.getElementById('reader-phone').value = '';
+                loadReaders();
+            }
+        }
+
+        // 添加书籍
+        async function addBook() {
+            const bookName = document.getElementById('book-name').value;
+            const author = document.getElementById('book-author').value;
+            const publisher = document.getElementById('book-publisher').value;
+            const category = document.getElementById('book-category').value;
+            const count = document.getElementById('book-count').value;
+            
+            const result = await callAPI('/api/add_book', 'POST', {
+                book_name: bookName,
+                author: author,
+                publisher: publisher,
+                category_name: category,
+                total_count: parseInt(count)
+            });
+            
+            showResult('add-book-result', result.message, result.success);
+            
+            if (result.success) {
+                document.getElementById('book-name').value = '';
+                document.getElementById('book-author').value = '';
+                document.getElementById('book-publisher').value = '';
+                document.getElementById('book-category').value = '';
+                document.getElementById('book-count').value = '1';
+                listAllBooks();
+                loadBooksForBorrow();
+            }
+        }
+
+        // 列出所有书籍
+        async function listAllBooks() {
+            const result = await callAPI('/api/list_books');
+            if (result.success) {
+                displayBooks(result.data, 'books-list');
+            }
+        }
+
+        // 搜索书籍
+        async function searchBooks() {
+            const keyword = document.getElementById('search-keyword').value;
+            const result = await callAPI(`/api/search_books?keyword=${encodeURIComponent(keyword)}`);
+            if (result.success) {
+                displayBooks(result.data, 'books-list');
+            }
+        }
+
+        // 按作者搜索
+        async function searchByAuthor() {
+            const author = document.getElementById('author-keyword').value;
+            const result = await callAPI(`/api/search_by_author?author=${encodeURIComponent(author)}`);
+            if (result.success) {
+                displayBooks(result.data, 'books-list');
+            }
+        }
+
+        // 显示书籍列表
+        function displayBooks(books, containerId) {
+            const container = document.getElementById(containerId);
+            
+            if (!books || books.length === 0) {
+                container.innerHTML = '<p>没有找到书籍</p>';
+                return;
+            }
+            
+            const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>书名</th>
+                            <th>作者</th>
+                            <th>出版社</th>
+                            <th>分类</th>
+                            <th>总数</th>
+                            <th>可借</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${books.map(book => `
+                            <tr>
+                                <td>${book.book_id}</td>
+                                <td>${book.book_name}</td>
+                                <td>${book.author}</td>
+                                <td>${book.publisher}</td>
+                                <td>${book.category_name || '未分类'}</td>
+                                <td>${book.total_count}</td>
+                                <td>${book.available_count}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // 加载读者列表
+        async function loadReaders() {
+            const result = await callAPI('/api/list_readers');
+            if (result.success) {
+                displayReaders(result.data);
+            }
+        }
+
+        // 显示读者列表
+        function displayReaders(readers) {
+            const container = document.getElementById('readers-list');
+            
+            if (!readers || readers.length === 0) {
+                container.innerHTML = '<p>没有读者数据</p>';
+                return;
+            }
+            
+            const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>姓名</th>
+                            <th>性别</th>
+                            <th>电话</th>
+                            <th>注册时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${readers.map(reader => `
+                            <tr>
+                                <td>${reader.reader_id}</td>
+                                <td>${reader.name}</td>
+                                <td>${reader.gender || '-'}</td>
+                                <td>${reader.phone || '-'}</td>
+                                <td>${new Date(reader.register_date).toLocaleDateString()}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // 加载借阅用书籍列表
+        async function loadBooksForBorrow() {
+            const result = await callAPI('/api/list_books');
+            if (result.success) {
+                displayBooks(result.data, 'books-list-borrow');
+            }
+        }
+
+        // 借书
+        async function borrowBook() {
+            const readerId = document.getElementById('borrow-reader-id').value;
+            const bookId = document.getElementById('borrow-book-id').value;
+            
+            if (!readerId || !bookId) {
+                alert('请输入读者ID和书籍ID');
+                return;
+            }
+            
+            const result = await callAPI('/api/borrow_book', 'POST', {
+                reader_id: parseInt(readerId),
+                book_id: parseInt(bookId)
+            });
+            
+            alert(result.message);
+            
+            if (result.success) {
+                document.getElementById('borrow-reader-id').value = '';
+                document.getElementById('borrow-book-id').value = '';
+                loadBooksForBorrow();
+                loadBorrowRecords();
+            }
+        }
+
+        // 还书
+        async function returnBook() {
+            const borrowId = document.getElementById('return-borrow-id').value;
+            
+            if (!borrowId) {
+                alert('请输入借阅记录ID');
+                return;
+            }
+            
+            const result = await callAPI('/api/return_book', 'POST', {
+                borrow_id: parseInt(borrowId)
+            });
+            
+            alert(result.message);
+            
+            if (result.success) {
+                document.getElementById('return-borrow-id').value = '';
+                loadBorrowRecords();
+                loadBooksForBorrow();
+            }
+        }
+
+        // 加载借阅记录
+        async function loadBorrowRecords() {
+            const result = await callAPI('/api/borrow_records');
+            if (result.success) {
+                displayBorrowRecords(result.data);
+            }
+        }
+
+        // 加载逾期书籍
+        async function loadOverdueBooks() {
+            const result = await callAPI('/api/statistics/overdue_books');
+            if (result.success) {
+                displayOverdueBooks(result.data);
+            }
+        }
+
+        // 显示借阅记录
+        function displayBorrowRecords(records) {
+            const container = document.getElementById('borrow-records');
+            
+            if (!records || records.length === 0) {
+                container.innerHTML = '<p>没有借阅记录</p>';
+                return;
+            }
+            
+            const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>记录ID</th>
+                            <th>读者姓名</th>
+                            <th>书名</th>
+                            <th>借书日期</th>
+                            <th>应还日期</th>
+                            <th>实还日期</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${records.map(record => {
+                            const isOverdue = record.status === '借出' && new Date(record.return_date) < new Date();
+                            const rowClass = record.status === '已归还' ? 'returned' : 
+                                           isOverdue ? 'overdue' : 'borrowed';
+                            return `
+                                <tr class="${rowClass}">
+                                    <td>${record.borrow_id}</td>
+                                    <td>${record.reader_name}</td>
+                                    <td>${record.book_name}</td>
+                                    <td>${new Date(record.borrow_date).toLocaleDateString()}</td>
+                                    <td>${new Date(record.return_date).toLocaleDateString()}</td>
+                                    <td>${record.actual_return_date ? new Date(record.actual_return_date).toLocaleDateString() : '-'}</td>
+                                    <td>${isOverdue ? '逾期' : record.status}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // 显示逾期书籍
+        function displayOverdueBooks(books) {
+            const container = document.getElementById('borrow-records');
+            
+            if (!books || books.length === 0) {
+                container.innerHTML = '<p>没有逾期书籍</p>';
+                return;
+            }
+            
+            const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>借阅ID</th>
+                            <th>读者姓名</th>
+                            <th>书名</th>
+                            <th>借书日期</th>
+                            <th>应还日期</th>
+                            <th>逾期天数</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${books.map(book => `
+                            <tr class="overdue">
+                                <td>${book.borrow_id}</td>
+                                <td>${book.reader_name}</td>
+                                <td>${book.book_name}</td>
+                                <td>${new Date(book.borrow_date).toLocaleDateString()}</td>
+                                <td>${new Date(book.return_date).toLocaleDateString()}</td>
+                                <td>${book.overdue_days}天</td>
+                                <td>${book.overdue_status}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // ==================== 新增的统计功能 ====================
+
+        // 加载图书馆总览
+        async function loadLibraryOverview() {
+            const result = await callAPI('/api/statistics/library_overview');
+            if (result.success) {
+                displayLibraryOverview(result.data);
+                loadReaderActivity();
+            }
+        }
+
+        // 显示图书馆总览
+        function displayLibraryOverview(data) {
+            const container = document.getElementById('statistics-overview');
+            
+            const html = `
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3><i class="fas fa-book"></i> 馆藏统计</h3>
+                        <div class="stat-value">${data.books.total_copies || 0}</div>
+                        <div class="stat-label">总册数 (${data.books.total_books || 0}种)</div>
+                    </div>
+                    
+                    <div class="stat-card info">
+                        <h3><i class="fas fa-users"></i> 读者统计</h3>
+                        <div class="stat-value">${data.readers.total_readers || 0}</div>
+                        <div class="stat-label">注册读者</div>
+                    </div>
+                    
+                    <div class="stat-card success">
+                        <h3><i class="fas fa-exchange-alt"></i> 借阅统计</h3>
+                        <div class="stat-value">${data.borrows.total_borrows || 0}</div>
+                        <div class="stat-label">总借阅次数</div>
+                    </div>
+                    
+                    <div class="stat-card warning">
+                        <h3><i class="fas fa-exclamation-triangle"></i> 逾期统计</h3>
+                        <div class="stat-value">${data.overdue.overdue_count || 0}</div>
+                        <div class="stat-label">逾期未还书籍</div>
+                    </div>
+                </div>
+                
+                <div class="ranking-list" style="margin-top: 30px;">
+                    <h3><i class="fas fa-crown"></i> 热门作者 TOP 5</h3>
+                    ${data.top_authors && data.top_authors.length > 0 ? 
+                      data.top_authors.map((author, index) => `
+                        <div class="ranking-item">
+                            <div class="ranking-number">${index + 1}</div>
+                            <div class="ranking-content">
+                                <div class="ranking-title">${author.author || '未知作者'}</div>
+                                <div class="ranking-subtitle">${author.book_count || 0} 本作品</div>
+                            </div>
+                        </div>
+                    `).join('') : '<p>暂无作者数据</p>'}
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // 加载书籍热门度
+        async function loadBookPopularity() {
+            const result = await callAPI('/api/statistics/book_popularity');
+            if (result.success) {
+                displayBookPopularity(result.data);
+            }
+        }
+
+        // 显示书籍热门度
+        function displayBookPopularity(books) {
+            const container = document.getElementById('book-popularity-list');
+            
+            if (!books || books.length === 0) {
+                container.innerHTML = '<p>没有数据</p>';
+                return;
+            }
+            
+            const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th>书名</th>
+                            <th>作者</th>
+                            <th>借阅次数</th>
+                            <th>库存</th>
+                            <th>可借</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${books.map((book, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${book.book_name}</td>
+                                <td>${book.author}</td>
+                                <td><strong>${book.borrow_count || 0}</strong></td>
+                                <td>${book.total_count}</td>
+                                <td>${book.available_count}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // 加载分类分布
+        async function loadCategoryDistribution() {
+            const result = await callAPI('/api/statistics/category_distribution');
+            if (result.success) {
+                displayCategoryDistribution(result.data);
+            }
+        }
+
+        // 显示分类分布
+        function displayCategoryDistribution(categories) {
+            const container = document.getElementById('category-distribution-list');
+            
+            if (!categories || categories.length === 0) {
+                container.innerHTML = '<p>没有分类数据</p>';
+                return;
+            }
+            
+            const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>分类</th>
+                            <th>书籍数量</th>
+                            <th>总册数</th>
+                            <th>可借册数</th>
+                            <th>借阅次数</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${categories.map(category => `
+                            <tr>
+                                <td>${category.category_name}</td>
+                                <td>${category.book_count}</td>
+                                <td>${category.total_copies}</td>
+                                <td>${category.available_copies}</td>
+                                <td>${category.total_borrow}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // 加载借阅趋势
+        async function loadBorrowTrend() {
+            const result = await callAPI('/api/statistics/borrow_trend');
+            if (result.success) {
+                displayBorrowTrendChart(result.data);
+            }
+        }
+
+        // 显示借阅趋势图表
+        function displayBorrowTrendChart(data) {
+            const ctx = document.getElementById('borrowTrendChart').getContext('2d');
+            
+            // 销毁之前的图表
+            if (borrowTrendChart) {
+                borrowTrendChart.destroy();
+            }
+            
+            const dailyLabels = data.daily.map(item => item.borrow_day);
+            const dailyData = data.daily.map(item => item.borrow_count);
+            const uniqueReaders = data.daily.map(item => item.unique_readers);
+            
+            borrowTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dailyLabels,
+                    datasets: [
+                        {
+                            label: '借阅次数',
+                            data: dailyData,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: '独立读者数',
+                            data: uniqueReaders,
+                            borderColor: '#4caf50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '数量'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '日期'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: '近30天借阅趋势'
+                        }
+                    }
+                }
+            });
+        }
+
+        // 加载读者活跃度
+        async function loadReaderActivity() {
+            const result = await callAPI('/api/statistics/reader_activity');
+            if (result.success) {
+                displayReaderActivity(result.data);
+            }
+        }
+
+        // 显示读者活跃度
+        function displayReaderActivity(readers) {
+            const container = document.getElementById('reader-activity-list');
+            
+            if (!readers || readers.length === 0) {
+                container.innerHTML = '<p>没有读者数据</p>';
+                return;
+            }
+            
+            const topReaders = readers.slice(0, 10);
+            
+            const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th>读者姓名</th>
+                            <th>总借阅数</th>
+                            <th>当前借阅</th>
+                            <th>首次借阅</th>
+                            <th>最近借阅</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${topReaders.map((reader, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${reader.name}</td>
+                                <td><strong>${reader.total_borrow || 0}</strong></td>
+                                <td>${reader.current_borrow || 0}</td>
+                                <td>${reader.first_borrow_date ? new Date(reader.first_borrow_date).toLocaleDateString() : '-'}</td>
+                                <td>${reader.latest_borrow_date ? new Date(reader.latest_borrow_date).toLocaleDateString() : '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // ==================== 智能推荐功能 ====================
+
+        // 获取个性化推荐
+        async function getPersonalizedRecommendations() {
+            const readerId = document.getElementById('recommend-reader-id').value;
+            
+            if (!readerId) {
+                alert('请输入读者ID');
+                return;
+            }
+            
+            const container = document.getElementById('personalized-recommendations');
+            container.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>正在生成个性化推荐...</p>
+                </div>
+            `;
+            
+            const result = await callAPI(`/api/recommend/books?reader_id=${readerId}`);
+            
+            if (result.success) {
+                displayRecommendations(result.data, 'personalized-recommendations', `为读者 #${readerId} 的个性化推荐`);
+            } else {
+                container.innerHTML = `<p class="error">${result.message}</p>`;
+            }
+        }
+
+        // 获取相似书籍
+        async function getSimilarBooks() {
+            const bookId = document.getElementById('recommend-book-id').value;
+            
+            if (!bookId) {
+                alert('请输入书籍ID');
+                return;
+            }
+            
+            const container = document.getElementById('similar-books-recommendations');
+            container.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>正在寻找相似书籍...</p>
+                </div>
+            `;
+            
+            const result = await callAPI(`/api/recommend/similar_books?book_id=${bookId}`);
+            
+            if (result.success) {
+                displayRecommendations(result.data, 'similar-books-recommendations', '相似书籍推荐');
+            } else {
+                container.innerHTML = `<p class="error">${result.message}</p>`;
+            }
+        }
+
+        // 显示推荐结果
+        function displayRecommendations(books, containerId, title) {
+            const container = document.getElementById(containerId);
+            
+            if (!books || books.length === 0) {
+                container.innerHTML = `<p>没有找到推荐书籍</p>`;
+                return;
+            }
+            
+            const html = `
+                <h3 style="margin-bottom: 20px;">${title}</h3>
+                <div class="recommendation-grid">
+                    ${books.map(book => `
+                        <div class="recommendation-card" onclick="showBookDetail(${book.book_id})">
+                            <div style="background: linear-gradient(135deg, #${Math.floor(Math.random()*16777215).toString(16)} 0%, #${Math.floor(Math.random()*16777215).toString(16)} 100%); height: 120px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="recommendation-content">
+                                <div class="recommendation-title">${book.book_name}</div>
+                                <div class="recommendation-author">${book.author}</div>
+                                <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                                    <span class="recommendation-category">${book.category_name || '未分类'}</span>
+                                    <span style="color: #4caf50; font-weight: bold;">可借: ${book.available_count}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // 显示书籍详情（示例功能）
+        function showBookDetail(bookId) {
+            alert(`书籍ID: ${bookId}\n功能开发中...`);
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            listAllBooks();
+            loadReaders();
+            loadBooksForBorrow();
+            loadBorrowRecords();
+        });
+    </script>
+</body>
+</html>
